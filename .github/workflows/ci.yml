@@ -101,7 +101,8 @@ jobs:
         run: |
           REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           IMAGE_TAG="ghcr.io/${REPO_OWNER}/devops-24eskcs064:latest"
-          docker build -t ${IMAGE_TAG} .
+          docker build -t ${IMAGE_TAG} -t ghcr.io/streetcoderrr/devops-24eskcs064:latest .
+          kind load docker-image ghcr.io/streetcoderrr/devops-24eskcs064:latest --name kind
           kind load docker-image ${IMAGE_TAG} --name kind
 
       - name: Apply Kubernetes manifests
@@ -111,7 +112,16 @@ jobs:
 
       - name: Wait for Deployment rollout
         run: |
-          kubectl rollout status deployment/aqi-api-deployment --timeout=120s
+          kubectl rollout status deployment/aqi-api-deployment --timeout=180s || {
+            echo "=== Pods Status ==="
+            kubectl get pods -o wide
+            echo "=== Describe Pods ==="
+            kubectl describe pods
+            echo "=== Pod Logs ==="
+            kubectl logs -l app=aqi-api --all-containers=true --tail=50
+            exit 1
+          }
+
 
       - name: Verify Kubernetes resources
         run: |
