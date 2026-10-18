@@ -124,3 +124,23 @@ def test_prediction_with_high_pollution():
 
     assert 0 <= result["predicted_aqi"] <= 500
     assert result["category"] != ""
+
+
+def test_health_endpoint():
+    """Check that the API health endpoint is working and returns healthy status."""
+
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["status"] == "healthy"
+    assert result["service"] == "aqi-prediction-api"
+
+
+def test_metrics_endpoint():
+    """Check that the Prometheus metrics endpoint exposes metrics."""
+
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert "http_requests_total" in response.text or "process_cpu_seconds_total" in response.text

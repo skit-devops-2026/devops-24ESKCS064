@@ -1,4 +1,4 @@
-name: AirQualityPrediction CI
+name: AirQualityPrediction CI/CD Pipeline
 
 on:
   push:
@@ -9,8 +9,13 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   test:
+    name: Run Unit & API Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -27,6 +32,95 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run tests
+      - name: Run Pytest test suite
         run: |
           python -m pytest -v
+
+  docker-build-and-push:
+    name: Build & Push Docker Image (M5)
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_TAG="ghcr.io/${REPO_OWNER}/devops-24eskcs064:latest"
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+          docker build -t ${IMAGE_TAG} -t aqi-prediction-api:latest .
+
+      - name: Test container execution & endpoints
+        run: |
+          docker run -d --name aqi-test -p 8000:8000 ${{ env.IMAGE_TAG }}
+          sleep 6
+          curl -f http://localhost:8000/health
+          curl -f http://localhost:8000/
+          curl -f http://localhost:8000/metrics
+          docker stop aqi-test && docker rm aqi-test
+
+      - name: Test Docker Compose
+        run: |
+          docker compose up -d
+          sleep 6
+          docker compose ps
+          curl -f http://localhost:8000/health
+          docker compose down
+
+      - name: Push image to GitHub Container Registry
+        run: |
+          docker push ${{ env.IMAGE_TAG }}
+
+  kubernetes-kind-verify:
+    name: Kubernetes Deployment & Verification (M7)
+    needs: docker-build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Kind Cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: kind
+
+      - name: Build and load image into Kind
+        run: |
+          REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_TAG="ghcr.io/${REPO_OWNER}/devops-24eskcs064:latest"
+          docker build -t ${IMAGE_TAG} .
+          kind load docker-image ${IMAGE_TAG} --name kind
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/service.yaml
+
+      - name: Wait for Deployment rollout
+        run: |
+          kubectl rollout status deployment/aqi-api-deployment --timeout=120s
+
+      - name: Verify Kubernetes resources
+        run: |
+          kubectl get deployments
+          kubectl get pods -o wide
+          kubectl get services
+
+      - name: Verify Pod health check via port-forward
+        run: |
+          kubectl port-forward svc/aqi-api-service 8000:8000 &
+          sleep 5
+          curl -f http://localhost:8000/health

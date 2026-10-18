@@ -509,3 +509,132 @@ Potential improvements include:
 By combining **pollution data processing, machine learning, FastAPI, frontend development, automated testing, GitHub Actions, Jenkins, and Git-based collaboration**, the project provides practical exposure to both **ML engineering and DevOps workflows**.
 
 The project can serve as a foundation for developing a production-oriented environmental intelligence platform capable of supporting real-time air-quality monitoring and prediction.
+
+---
+
+## Live Demo
+
+The containerized application is deployed to cloud production on Render:
+
+🔗 **Live Application URL:** https://devops-24eskcs064.onrender.com  
+📖 **Interactive Swagger API Docs:** https://devops-24eskcs064.onrender.com/docs  
+💓 **Health Check Endpoint:** https://devops-24eskcs064.onrender.com/health  
+📊 **Prometheus Metrics Endpoint:** https://devops-24eskcs064.onrender.com/metrics  
+
+![Deployment Verification](docs/deployment.png)
+
+---
+
+## 18. DevOps Module M5: Containerization
+
+### Docker Container
+
+The project includes an optimized, production-ready `Dockerfile` based on `python:3.12-slim` utilizing a non-root system user, layer-cached dependency installation, built-in healthchecks, and environment configuration.
+
+#### Build the Docker image:
+```bash
+docker build -t ghcr.io/streetcoderrr/devops-24eskcs064:latest .
+```
+
+#### Run the Docker container:
+```bash
+docker run -d --name aqi-prediction-api -p 8000:8000 -e PORT=8000 ghcr.io/streetcoderrr/devops-24eskcs064:latest
+```
+
+Verify the container is responding:
+```bash
+curl http://localhost:8000/health
+```
+
+### Docker Compose
+
+Run the multi-service application stack (FastAPI Application + Prometheus Server) with:
+
+```bash
+docker compose up -d
+```
+
+- **Application API:** http://localhost:8000
+- **Prometheus Monitoring:** http://localhost:9090
+
+To stop services:
+```bash
+docker compose down
+```
+
+### Container Registry
+
+The Docker image is published to **GitHub Container Registry (GHCR)**:
+- **Registry Image:** `ghcr.io/streetcoderrr/devops-24eskcs064:latest`
+- **Registry URL:** https://github.com/StreetCoderrr/devops-24ESKCS064/pkgs/container/devops-24eskcs064
+
+Pull directly with:
+```bash
+docker pull ghcr.io/streetcoderrr/devops-24eskcs064:latest
+```
+
+---
+
+## 19. DevOps Module M6: Deployment & Monitoring
+
+### Prometheus Monitoring Configuration
+
+The application is instrumented using `prometheus-client` and exposes production runtime metrics at `/metrics`.
+
+Scrape configuration is located at `monitoring/prometheus.yml`:
+```yaml
+scrape_configs:
+  - job_name: "aqi-prediction-api"
+    scrape_interval: 5s
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["aqi-api:8000", "localhost:8000"]
+```
+
+Exposed metrics include:
+- `http_requests_total`: Request counter partitioned by method, endpoint, and status.
+- `http_request_duration_seconds`: Histogram measuring API latency and quantiles (p50, p95).
+- `aqi_predictions_total`: Number of predictions categorized by predicted AQI category.
+- `process_cpu_seconds_total` & `process_resident_memory_bytes`: System resource consumption.
+- Application health state via `/health`.
+
+### Grafana Dashboard
+
+A complete monitoring dashboard configuration is committed at `monitoring/dashboard.json`.
+It visualizes:
+1. Service Availability status (`UP`/`DOWN`).
+2. Request throughput and error rates.
+3. p95 and average API response latencies.
+4. CPU and RSS Memory utilization.
+5. Distribution of AQI predictions across categories (Good, Moderate, Poor, etc.).
+
+---
+
+## 20. DevOps Module M7: Kubernetes (K8s)
+
+Kubernetes manifests are organized under `k8s/`:
+- **`k8s/deployment.yaml`**: Deploys 2 replicas of the application container pulling from `ghcr.io/streetcoderrr/devops-24eskcs064:latest`, configured with CPU/Memory resource constraints, environment variables, liveness probe, and readiness probe.
+- **`k8s/service.yaml`**: Exposes the deployment externally using a `NodePort` service on port `30080` (targetPort 8000).
+
+### Deploying to Kind Cluster
+
+```bash
+# 1. Create a Kind cluster
+kind create cluster --name kind
+
+# 2. Deploy application and service manifests
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+
+# 3. Verify deployment and pods status
+kubectl get deployments
+kubectl get pods -o wide
+kubectl get services
+```
+
+### Kubernetes Verification Proof
+
+Pods successfully reach `1/1 Running` and `READY`:
+
+![Kubernetes Pods Verification](docs/kubernetes-pods.png)
+

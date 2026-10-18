@@ -1,0 +1,32 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+.jenkins-venv/
+
+# Testing & caching
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Git & GitHub
+.git/
+.github/
+.gitignore
+.gitignore.save
+
+# Notebooks & documentation
+notebooks/
+docs/
+*.md
+
+# CI/CD files
+Jenkinsfile
+.virtual_documents/

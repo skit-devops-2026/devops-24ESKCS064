@@ -1,0 +1,31 @@
+services:
+  aqi-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/streetcoderrr/devops-24eskcs064:latest
+    container_name: aqi-prediction-api
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: aqi-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - aqi-api
+    restart: unless-stopped
