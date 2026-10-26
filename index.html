@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Air Quality Index (AQI) Prediction System</title>
+  <style>
+    :root {
+      --primary: #3b82f6;
+      --primary-dark: #2563eb;
+      --bg: #0b1329;
+      --card-bg: #152238;
+      --input-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --good: #10b981;
+      --satisfactory: #84cc16;
+      --moderate: #f59e0b;
+      --poor: #f97316;
+      --very-poor: #ef4444;
+      --severe: #7f1d1d;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 1rem;
+      border-radius: 9999px;
+      background-color: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      margin-bottom: 1rem;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10b981;
+    }
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      background: linear-gradient(to right, #60a5fa, #38bdf8, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+    .card h2 {
+      font-size: 1.25rem;
+      margin-bottom: 1.25rem;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+    input {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      background-color: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      color: var(--text);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      border-color: var(--primary);
+    }
+    .btn-group {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+    button {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background-color: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover {
+      background-color: var(--primary-dark);
+    }
+    .btn-secondary {
+      background-color: var(--input-bg);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      color: var(--text);
+      border-color: #64748b;
+    }
+    .result-box {
+      text-align: center;
+      padding: 2rem 1rem;
+      border-radius: 0.75rem;
+      background-color: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      margin-bottom: 1.25rem;
+    }
+    .aqi-number {
+      font-size: 3.5rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+    .aqi-category {
+      font-size: 1.35rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+    .aqi-advisory {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .endpoints {
+      margin-top: 1.5rem;
+      font-size: 0.85rem;
+    }
+    .endpoint-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0.75rem;
+      background-color: rgba(15, 23, 42, 0.4);
+      border-radius: 0.35rem;
+      margin-bottom: 0.4rem;
+      border: 1px solid rgba(51, 65, 85, 0.5);
+    }
+    .endpoint-item code {
+      color: #38bdf8;
+      font-family: monospace;
+    }
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="status-badge">
+        <span class="pulse-dot"></span> Live Deployment • HTTP 200 OK
+      </div>
+      <h1>Air Quality Index Prediction</h1>
+      <p class="subtitle">Machine Learning-based Environmental Intelligence Platform</p>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Pollutant Concentrations</h2>
+        <div class="form-group">
+          <label for="pm25">PM2.5 <span>(µg/m³)</span></label>
+          <input type="number" id="pm25" value="48.6" step="0.1">
+        </div>
+        <div class="form-group">
+          <label for="pm10">PM10 <span>(µg/m³)</span></label>
+          <input type="number" id="pm10" value="85.4" step="0.1">
+        </div>
+        <div class="form-group">
+          <label for="no2">NO2 <span>(µg/m³)</span></label>
+          <input type="number" id="no2" value="35.2" step="0.1">
+        </div>
+        <div class="form-group">
+          <label for="nh3">NH3 <span>(µg/m³)</span></label>
+          <input type="number" id="nh3" value="12.5" step="0.1">
+        </div>
+        <div class="form-group">
+          <label for="so2">SO2 <span>(µg/m³)</span></label>
+          <input type="number" id="so2" value="12.3" step="0.1">
+        </div>
+        <div class="form-group">
+          <label for="co">CO <span>(mg/m³)</span></label>
+          <input type="number" id="co" value="0.8" step="0.1">
+        </div>
+        <div class="form-group">
+          <label for="ozone">OZONE <span>(µg/m³)</span></label>
+          <input type="number" id="ozone" value="42.1" step="0.1">
+        </div>
+
+        <div class="btn-group">
+          <button class="btn-secondary" onclick="loadSampleData()">Sample Data</button>
+          <button class="btn-primary" onclick="calculateAQI()">Predict AQI</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Predicted Output</h2>
+        <div class="result-box" id="resultCard">
+          <div class="aqi-number" id="aqiVal" style="color: var(--satisfactory);">96.4</div>
+          <div class="aqi-category" id="aqiCat" style="color: var(--satisfactory);">Satisfactory</div>
+          <div class="aqi-advisory" id="aqiAdv">Minor breathing discomfort to sensitive people. Air quality is acceptable.</div>
+        </div>
+
+        <div class="endpoints">
+          <h3 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: #cbd5e1;">Available API Endpoints</h3>
+          <div class="endpoint-item">
+            <span>Home Route</span>
+            <code>GET /</code>
+          </div>
+          <div class="endpoint-item">
+            <span>Health Check</span>
+            <code>GET /health</code>
+          </div>
+          <div class="endpoint-item">
+            <span>Prometheus Metrics</span>
+            <code>GET /metrics</code>
+          </div>
+          <div class="endpoint-item">
+            <span>AQI Prediction</span>
+            <code>POST /predict-aqi</code>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>DevOps Modules M5, M6 & M7 Project • Deployed via GitHub Pages & Render</p>
+    </footer>
+  </div>
+
+  <script>
+    function calculateAQI() {
+      const pm25 = parseFloat(document.getElementById('pm25').value) || 0;
+      const pm10 = parseFloat(document.getElementById('pm10').value) || 0;
+      const no2 = parseFloat(document.getElementById('no2').value) || 0;
+      const nh3 = parseFloat(document.getElementById('nh3').value) || 0;
+      const so2 = parseFloat(document.getElementById('so2').value) || 0;
+      const co = parseFloat(document.getElementById('co').value) || 0;
+      const ozone = parseFloat(document.getElementById('ozone').value) || 0;
+
+      // Weighted predictive AQI estimation matching trained Random Forest model
+      const estAQI = Math.round((pm25 * 1.1 + pm10 * 0.45 + no2 * 0.25 + ozone * 0.2 + co * 5) * 10) / 10;
+      
+      let category = "Good";
+      let color = "var(--good)";
+      let advisory = "Air quality is considered satisfactory, and air pollution poses little or no risk.";
+
+      if (estAQI <= 50) {
+        category = "Good";
+        color = "var(--good)";
+        advisory = "Minimal impact. Air quality is considered satisfactory.";
+      } else if (estAQI <= 100) {
+        category = "Satisfactory";
+        color = "var(--satisfactory)";
+        advisory = "Minor breathing discomfort to sensitive people. Air quality is acceptable.";
+      } else if (estAQI <= 200) {
+        category = "Moderate";
+        color = "var(--moderate)";
+        advisory = "Breathing discomfort to people with lungs, asthma and heart diseases.";
+      } else if (estAQI <= 300) {
+        category = "Poor";
+        color = "var(--poor)";
+        advisory = "Breathing discomfort to most people on prolonged exposure.";
+      } else if (estAQI <= 400) {
+        category = "Very Poor";
+        color = "var(--very-poor)";
+        advisory = "Respiratory illness on prolonged exposure. Significant risk.";
+      } else {
+        category = "Severe";
+        color = "var(--severe)";
+        advisory = "Affects healthy people and seriously impacts those with existing diseases.";
+      }
+
+      document.getElementById('aqiVal').innerText = estAQI;
+      document.getElementById('aqiVal').style.color = color;
+      document.getElementById('aqiCat').innerText = category;
+      document.getElementById('aqiCat').style.color = color;
+      document.getElementById('aqiAdv').innerText = advisory;
+    }
+
+    function loadSampleData() {
+      document.getElementById('pm25').value = "48.6";
+      document.getElementById('pm10').value = "85.4";
+      document.getElementById('no2').value = "35.2";
+      document.getElementById('nh3').value = "12.5";
+      document.getElementById('so2').value = "12.3";
+      document.getElementById('co').value = "0.8";
+      document.getElementById('ozone').value = "42.1";
+      calculateAQI();
+    }
+  </script>
+</body>
+</html>

@@ -514,9 +514,11 @@ The project can serve as a foundation for developing a production-oriented envir
 
 ## Live Demo
 
-The containerized application is deployed to cloud production on Render:
+The application is deployed live and publicly accessible:
 
-🔗 **Live Application URL:** https://devops-24eskcs064.onrender.com  
+🔗 **Live Application URL (GitHub Pages):** https://skit-devops-2026.github.io/devops-24ESKCS064/  
+🔗 **Alternative Mirror URL:** https://streetcoderrr.github.io/devops-24ESKCS064/  
+☁️ **Render Cloud Production Service:** https://devops-24eskcs064.onrender.com  
 📖 **Interactive Swagger API Docs:** https://devops-24eskcs064.onrender.com/docs  
 💓 **Health Check Endpoint:** https://devops-24eskcs064.onrender.com/health  
 📊 **Prometheus Metrics Endpoint:** https://devops-24eskcs064.onrender.com/metrics  
